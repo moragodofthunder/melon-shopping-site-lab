@@ -77,15 +77,20 @@ def add_to_cart(melon_id):
 
     count = 0
 
-    session['cart'] = {'melon_id': count}
+    #see if cart exists, then create if it doesn't
+    if 'cart' in session:
+        session['cart'][melon_id] = session['cart'].get(melon_id, 0) + 1
 
-    if melon_id not in 'cart':
-        session['cart']['melon_id'] += 1
-        session.modified = True
-        message = flash('Added to cart')
-        return render_template("base.html", message=message)
     else:
-        return redirect('/melon/<melon_id>')
+        session['cart'] = {}
+        session['cart'][melon_id] = session['cart'].get(melon_id, 0) + 1
+
+    session.modified = True
+    flash('Added to cart')
+    return redirect('/cart')
+
+    # else:
+    #     return redirect('/melon/<melon_id>')
 
     # return "Oops! This needs to be implemented!"
 
@@ -98,22 +103,34 @@ def show_shopping_cart():
     # The logic here will be something like:
     #
     # - get the cart dictionary from the session
+    # session['cart'] = {}
+    cart = session.get(session['cart'], {})
     # - create a list to hold melon objects and a variable to hold the total
     #   cost of the order
+    melon_objects = []
+    total_order = 0
     # - loop over the cart dictionary, and for each melon id:
     #    - get the corresponding Melon object
+    for melon_id, quantity in cart.items():
     #    - compute the total cost for that type of melon
+        melon = melons.get_by_id(melon_id)
+        total_cost = melon.price * quantity
     #    - add this to the order total
+        total_order += total_cost
     #    - add quantity and total cost as attributes on the Melon object
     #    - add the Melon object to the list created above
+        melon.quantity = quantity
+        melon.total_cost = total_cost
+
+        melon_objects.append(melon)
     # - pass the total order cost and the list of Melon objects to the template
-    #
+    #   
     # Make sure your function can also handle the case wherein no cart has
     # been added to the session
-
+        
     
 
-    return render_template("cart.html")
+    return render_template("cart.html", total_order=total_order, cart=melon_objects)
 
 
 @app.route("/login", methods=["GET"])
